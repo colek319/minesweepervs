@@ -1,6 +1,4 @@
-
-
-
+package minesweeper
 
 type Cell struct {
 	bomb  bool
@@ -20,4 +18,3 @@ func New(width uint, height uint) Minesweeper {
 		board[i] = make([]Cell, height)
 	}
 }
- 
