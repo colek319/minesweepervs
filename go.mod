@@ -1,4 +1,4 @@
-module minesweepervs
+module github.com/colek319/minesweepervs
 
 go 1.15
 
