@@ -14,4 +14,12 @@ To run the server:
 > go run main.go
 ```
 
-And navigate to `localhost:9090`
+Alternatively, use docker-compose. Run:
+
+```
+docker-compose up
+```
+
+This will run the docker run configuration for every service defined in docker-compose.yml. 
+
+Navigate to `localhost:9090`
