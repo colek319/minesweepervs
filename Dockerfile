@@ -10,6 +10,4 @@ COPY . .
 
 RUN GOOS=js GOARCH=wasm go build -o assets/minesweeper.wasm cmd/wasm/main.go 
 
-WORKDIR /minesweepervs/cmd/server
-
-CMD go run main.go
+CMD go run cmd/server/main.go
