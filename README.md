@@ -1,5 +1,7 @@
 # minesweepervs
 
+
+## Local Build (non-docker)
 A multiplayer minesweeper implemented in WebAssembly
 
 To compile, run from root:
@@ -10,10 +12,11 @@ GOOS=js GOARCH=wasm go build -o assets/minesweeper.wasm cmd/wasm/main.go
 
 To run the server:
 ```
-> cd cmd/server
-> go run main.go
+> go run cmd/server/main.go
 ```
 
+
+## Docker Build 
 Alternatively, use docker-compose. Run:
 
 ```
