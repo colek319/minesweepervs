@@ -3,6 +3,7 @@ package main
 import (
 	"fmt"
 	"github.com/gin-gonic/gin"
+	"github.com/gorilla/websocket"
 	"net/http"
 )
 
@@ -29,7 +30,7 @@ func setupRouter() *gin.Engine {
 	return setupRoutes(r)
 }
 
-func setupServer() {
+func setupServerState() {
 	// Make a match and append to matches list
 	lobbies = append(lobbies, makeNewLobby())
 }
@@ -75,8 +76,39 @@ func printAllMatchesHandler(c *gin.Context) {
 	c.JSON(http.StatusOK, lobbies)
 }
 
+// TODO(will) - figure out what our read and write buffer sizes should be
+var wsUpgrader = websocket.Upgrader{
+	ReadBufferSize:  1024,
+	WriteBufferSize: 1024,
+}
+
+func wsHandler(w http.ResponseWriter, r *http.Request) {
+	fmt.Println("in wsHandler")
+	conn, err := wsUpgrader.Upgrade(w, r, nil)
+	defer conn.Close()
+
+	if err != nil {
+		fmt.Printf("Failed to set websocket upgrade: %+v\n", err)
+		return
+	}
+	fmt.Println("entering loop")
+	for {
+		_, msg, err := conn.ReadMessage()
+		if err != nil {
+			break
+		}
+		m := "You sent: " + string(msg)
+		err = conn.WriteMessage(websocket.TextMessage, []byte(m))
+		fmt.Println("Got message:", string(msg))
+		if err != nil {
+			fmt.Println("error when writing:", err)
+			break
+		}
+	}
+}
+
 func main() {
-	setupServer()
+	setupServerState()
 
 	router := setupRouter()
 	router.Run(":9090")

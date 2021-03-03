@@ -1,8 +1,10 @@
 package main
 
 import (
-	"github.com/gin-gonic/gin"
 	"net/http"
+
+	"github.com/gin-contrib/static"
+	"github.com/gin-gonic/gin"
 )
 
 /*
@@ -14,13 +16,15 @@ func setupRoutes(r *gin.Engine) *gin.Engine {
 
 	r.GET("/join/:username", joinLobbyHandler)
 	r.GET("/printalllobbies", printAllMatchesHandler)
+	r.GET("/ws-init", func(c *gin.Context) {
+		wsHandler(c.Writer, c.Request)
+	})
+	r.Use(static.Serve("/assets", static.LocalFile("./assets", false)))
 
 	// Serve index.html
 	r.GET("/", func(c *gin.Context) {
 		c.HTML(http.StatusOK, "index.html", gin.H{})
 	})
-
-	//r.Static("/", "index.html")
 
 	return r
 }
