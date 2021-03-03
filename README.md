@@ -10,8 +10,8 @@ To compile, run from root:
 GOOS=js GOARCH=wasm go build -o assets/minesweeper.wasm cmd/wasm/main.go
 ```
 
-Install gin-gonic and gorilla to run the server by running:
-`go get -u github.com/gin-gonic/gin && go get github.com/gorilla/websocket`
+Install gin-gonic and ws library to run the server by running:
+`go get -u github.com/gin-gonic/gin && go get nhooyr.io/websocket`
 
 To run the server:
 ```

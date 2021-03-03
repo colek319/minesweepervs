@@ -7,4 +7,5 @@ require (
 	github.com/gin-gonic/gin v1.6.3 // indirect
 	github.com/gorilla/websocket v1.4.2 // indirect
 	github.com/markfarnan/go-canvas v0.0.0-20200722235510-6971ccd00770 // indirect
+	nhooyr.io/websocket v1.8.6 // indirect
 )

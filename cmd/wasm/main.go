@@ -1,33 +1,39 @@
 package main
 
 import (
+	"context"
 	"fmt"
 	"net/url"
+	"time"
 	//"os"
-	"github.com/gorilla/websocket"
 	"syscall/js"
+
+	"nhooyr.io/websocket"
 )
 
 var conn *websocket.Conn = nil
 
 func makeConnection() error {
-	urlstr := "localhost:9090/ws-init"
 	u := url.URL{Scheme: "ws", Host: "localhost:9090", Path: "/ws-init"}
-	fmt.Println("urlstr:", urlstr)
-	fmt.Println("url formatter as string:", u.String())
+
 	// Create websocket connection
 	fmt.Println("Dialing", u.String(), "...")
 	var err error
-	conn, _, err = websocket.DefaultDialer.Dial(u.String(), nil)
+	ctx, cancel := context.WithTimeout(context.Background(), time.Minute)
+	defer cancel()
+	// ctx := context.TODO()
+	conn, _, err = websocket.Dial(ctx, u.String(), nil)
 	if err != nil {
 		fmt.Println("dial:", err)
 		return err
 	}
+	fmt.Println("returning nil from makeConnection")
 	return nil
 }
 
 func sendMsg(msg string) error {
-	err := conn.WriteMessage(websocket.TextMessage, []byte(msg))
+	// err := conn.WriteMessage(websocket.TextMessage, []byte(msg))
+	err := conn.Write(context.TODO(), websocket.MessageText, []byte(msg))
 	return err
 }
 
@@ -62,6 +68,7 @@ func makeConnectionWrapper() js.Func {
 }
 
 func main() {
+	//ws := js.Global().Get("WebSocket").New("ws://localhost:9090/ws-init")
 	// Expose functions to JS
 	js.Global().Set("makeConnection", makeConnectionWrapper())
 	js.Global().Set("sendMsg", sendMsgWrapper())

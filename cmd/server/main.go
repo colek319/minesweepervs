@@ -3,8 +3,8 @@ package main
 import (
 	"fmt"
 	"github.com/gin-gonic/gin"
-	"github.com/gorilla/websocket"
 	"net/http"
+	"nhooyr.io/websocket"
 )
 
 const mAXPLAYERS = 2
@@ -77,15 +77,15 @@ func printAllMatchesHandler(c *gin.Context) {
 }
 
 // TODO(will) - figure out what our read and write buffer sizes should be
-var wsUpgrader = websocket.Upgrader{
-	ReadBufferSize:  1024,
-	WriteBufferSize: 1024,
-}
+// var wsUpgrader = websocket.Upgrader{
+// 	ReadBufferSize:  1024,
+// 	WriteBufferSize: 1024,
+// }
 
 func wsHandler(w http.ResponseWriter, r *http.Request) {
 	fmt.Println("in wsHandler")
-	conn, err := wsUpgrader.Upgrade(w, r, nil)
-	defer conn.Close()
+	conn, err := websocket.Accept(w, r, nil)
+	defer conn.Close(websocket.StatusInternalError, "oops, closing...")
 
 	if err != nil {
 		fmt.Printf("Failed to set websocket upgrade: %+v\n", err)
@@ -93,13 +93,15 @@ func wsHandler(w http.ResponseWriter, r *http.Request) {
 	}
 	fmt.Println("entering loop")
 	for {
-		_, msg, err := conn.ReadMessage()
+		_, msg, err := conn.Read(r.Context())
 		if err != nil {
+			fmt.Println("error when reading:", err)
 			break
 		}
-		m := "You sent: " + string(msg)
-		err = conn.WriteMessage(websocket.TextMessage, []byte(m))
 		fmt.Println("Got message:", string(msg))
+
+		m := "You sent: " + string(msg)
+		err = conn.Write(r.Context(), websocket.MessageText, []byte(m))
 		if err != nil {
 			fmt.Println("error when writing:", err)
 			break
