@@ -1,10 +1,12 @@
 package main
 
 import (
+	"context"
 	"fmt"
 	"github.com/gin-gonic/gin"
 	"net/http"
 	"nhooyr.io/websocket"
+	"time"
 )
 
 const mAXPLAYERS = 2
@@ -85,7 +87,9 @@ func printAllMatchesHandler(c *gin.Context) {
 func wsHandler(w http.ResponseWriter, r *http.Request) {
 	fmt.Println("in wsHandler")
 	conn, err := websocket.Accept(w, r, nil)
-	defer conn.Close(websocket.StatusInternalError, "oops, closing...")
+
+	ctx, cancel := context.WithTimeout(r.Context(), time.Second*10)
+	defer cancel()
 
 	if err != nil {
 		fmt.Printf("Failed to set websocket upgrade: %+v\n", err)
@@ -93,9 +97,13 @@ func wsHandler(w http.ResponseWriter, r *http.Request) {
 	}
 	fmt.Println("entering loop")
 	for {
-		_, msg, err := conn.Read(r.Context())
+		fmt.Println("Starting read")
+		_, msg, err := conn.Read(ctx)
+		fmt.Println("After read")
 		if err != nil {
 			fmt.Println("error when reading:", err)
+			conn.Close(websocket.StatusInternalError, "oops, closing...")
+			fmt.Println("Connection closed")
 			break
 		}
 		fmt.Println("Got message:", string(msg))
@@ -107,6 +115,9 @@ func wsHandler(w http.ResponseWriter, r *http.Request) {
 			break
 		}
 	}
+	fmt.Println("Closing connection")
+	conn.Close(websocket.StatusNormalClosure, 
+	
 }
 
 func main() {

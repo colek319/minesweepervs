@@ -17,12 +17,13 @@ func makeConnection() error {
 	u := url.URL{Scheme: "ws", Host: "localhost:9090", Path: "/ws-init"}
 
 	// Create websocket connection
-	fmt.Println("Dialing", u.String(), "...")
 	var err error
 	ctx, cancel := context.WithTimeout(context.Background(), time.Minute)
 	defer cancel()
 	// ctx := context.TODO()
+	fmt.Println("Dialing", u.String(), "...")
 	conn, _, err = websocket.Dial(ctx, u.String(), nil)
+	fmt.Println("After dial")
 	if err != nil {
 		fmt.Println("dial:", err)
 		return err
