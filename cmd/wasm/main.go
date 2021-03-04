@@ -3,29 +3,21 @@ package main
 import (
 	"fmt"
 	"syscall/js"
+
+	"github.com/tdewolff/canvas"
+	"github.com/tdewolff/canvas/htmlcanvas"
 )
 
 func main() {
-	var cvs, doc, ctx js.Value
-
 	// This line will print in console
 	fmt.Println("Hello, WebAssembly!")
-	fmt.Println("Hello, WebAssembly!")
 
-	width := js.Global().Get("innerWidth").Int()
-	height := js.Global().Get("innerHeight").Int()
-	doc = js.Global().Get("document")
-	cvs = doc.Call("getElementById", "cvs")
-	fmt.Println(width, height)
-	cvs.Call("setAttribute", "width", 100)
-	cvs.Call("setAttribute", "height", 100)
-	cvs.Set("tabIndex", 0) // Not sure if this is needed
-	ctx = cvs.Call("getContext", "2d")
+	cvs := js.Global().Get("document").Call("getElementById", "cvs")
+	c := htmlcanvas.New(cvs, 100, 100, 5.0)
+	ctx := canvas.NewContext(c)
 
-	ctx.Call("beginPath")
-	ctx.Call("rect", 20, 20, 10, 10)
-	// ctx.Set("fillStyle", "red")
-	ctx.Call("closePath")
+	ctx.SetFillColor(canvas.Black)
+	ctx.DrawPath(10, 10, canvas.Rectangle(10, 10))
 
 	<-make(chan bool)
 }
