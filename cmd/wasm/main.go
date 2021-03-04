@@ -8,6 +8,14 @@ import (
 	"github.com/tdewolff/canvas/htmlcanvas"
 )
 
+func onClickHandler() {
+
+}
+
+func onClickHandlerWrapper() {
+
+}
+
 func main() {
 	// This line will print in console
 	fmt.Println("Hello, WebAssembly!")
