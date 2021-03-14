@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"net/url"
 	"time"
+
 	//"os"
 	"syscall/js"
 
@@ -15,20 +16,22 @@ var conn *websocket.Conn = nil
 
 func makeConnection() error {
 	u := url.URL{Scheme: "ws", Host: "localhost:9090", Path: "/ws-init"}
-
-	// Create websocket connection
+	fmt.Println(u.String())
 	var err error
-	ctx, cancel := context.WithTimeout(context.Background(), time.Minute)
+	_ = err
+
+	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
 	defer cancel()
-	// ctx := context.TODO()
-	fmt.Println("Dialing", u.String(), "...")
+
 	conn, _, err = websocket.Dial(ctx, u.String(), nil)
-	fmt.Println("After dial")
-	if err != nil {
-		fmt.Println("dial:", err)
-		return err
+	defer conn.Close(websocket.StatusInternalError, "")
+
+	conn.SetReadLimit(65536)
+	for i := 0; i < 10; i++ {
+		err = conn.Write(ctx, websocket.MessageText, []byte("1"))
 	}
-	fmt.Println("returning nil from makeConnection")
+
+	err = conn.Close(websocket.StatusNormalClosure, "")
 	return nil
 }
 
