@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"net/url"
 	"time"
+
 	//"os"
 	"nhooyr.io/websocket"
 	"syscall/js"
@@ -13,21 +14,24 @@ import (
 var conn *websocket.Conn = nil
 
 func makeConnection() error {
-	u := url.URL{Scheme: "ws", Host: "localhost:9090", Path: "/ws-init"}
+	go func() {
+		u := url.URL{Scheme: "ws", Host: "localhost:9090", Path: "/ws-init"}
 
-	// Create websocket connection
-	var err error
-	ctx, cancel := context.WithTimeout(context.Background(), time.Second*10)
-	defer cancel()
-
-	fmt.Println("Dialing", u.String(), "...")
-	conn, _, err = websocket.Dial(ctx, u.String(), nil)
-	fmt.Println("After dial")
-	if err != nil {
-		fmt.Println("dial:", err)
-		return err
-	}
-	fmt.Println("returning nil from makeConnection")
+		// Create websocket connection
+		// var err error
+		ctx, cancel := context.WithTimeout(context.Background(), time.Second*5)
+		defer cancel()
+		// ctx := context.TODO()
+		fmt.Println("Dialing", u.String(), "...")
+		conn, _, _ = websocket.Dial(ctx, u.String(), nil)
+		conn.Write(context.TODO(), websocket.MessageText, []byte("Hello World"))
+		fmt.Println("After dial")
+		// if err != nil {
+		// 	fmt.Println("dial:", err)
+		// 	return err
+		// }
+		fmt.Println("returning nil from makeConnection")
+	}()
 	return nil
 }
 

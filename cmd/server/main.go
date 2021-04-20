@@ -3,10 +3,11 @@ package main
 import (
 	"context"
 	"fmt"
-	"github.com/gin-gonic/gin"
 	"net/http"
-	"nhooyr.io/websocket"
 	"time"
+
+	"github.com/gin-gonic/gin"
+	"nhooyr.io/websocket"
 )
 
 const mAXPLAYERS = 2
