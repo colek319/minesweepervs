@@ -16,9 +16,7 @@ func setupRoutes(r *gin.Engine) *gin.Engine {
 
 	r.GET("/join/:username", joinLobbyHandler)
 	r.GET("/printalllobbies", printAllMatchesHandler)
-	r.GET("/ws-init", func(c *gin.Context) {
-		wsHandler(c.Writer, c.Request)
-	})
+	r.GET("/ws-init", wsHandler)
 	r.Use(static.Serve("/assets", static.LocalFile("./assets", false)))
 
 	// Serve index.html

@@ -6,9 +6,8 @@ import (
 	"net/url"
 	"time"
 	//"os"
-	"syscall/js"
-
 	"nhooyr.io/websocket"
+	"syscall/js"
 )
 
 var conn *websocket.Conn = nil
@@ -18,9 +17,9 @@ func makeConnection() error {
 
 	// Create websocket connection
 	var err error
-	ctx, cancel := context.WithTimeout(context.Background(), time.Minute)
+	ctx, cancel := context.WithTimeout(context.Background(), time.Second*10)
 	defer cancel()
-	// ctx := context.TODO()
+
 	fmt.Println("Dialing", u.String(), "...")
 	conn, _, err = websocket.Dial(ctx, u.String(), nil)
 	fmt.Println("After dial")
@@ -69,7 +68,6 @@ func makeConnectionWrapper() js.Func {
 }
 
 func main() {
-	//ws := js.Global().Get("WebSocket").New("ws://localhost:9090/ws-init")
 	// Expose functions to JS
 	js.Global().Set("makeConnection", makeConnectionWrapper())
 	js.Global().Set("sendMsg", sendMsgWrapper())
