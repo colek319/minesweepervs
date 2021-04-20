@@ -8,9 +8,8 @@ import (
 	"time"
 
 	//"os"
-	"syscall/js"
-
 	"nhooyr.io/websocket"
+	"syscall/js"
 )
 
 const TimeoutDuration = time.Second * 60
@@ -105,7 +104,6 @@ func readMsgWrapper() js.Func {
 }
 
 func main() {
-	//ws := js.Global().Get("WebSocket").New("ws://localhost:9090/ws-init")
 	// Expose functions to JS
 	js.Global().Set("makeConnection", makeConnectionWrapper())
 	js.Global().Set("sendMsg", sendMsgWrapper())

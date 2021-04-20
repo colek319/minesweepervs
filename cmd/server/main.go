@@ -85,7 +85,9 @@ func printAllMatchesHandler(c *gin.Context) {
 // 	WriteBufferSize: 1024,
 // }
 
-func wsHandler(w http.ResponseWriter, r *http.Request) {
+func wsHandler(c *gin.Context) {
+	w := c.Writer
+	r := c.Request
 	fmt.Println("in wsHandler")
 	conn, err := websocket.Accept(w, r, nil)
 
@@ -96,6 +98,7 @@ func wsHandler(w http.ResponseWriter, r *http.Request) {
 		fmt.Printf("Failed to set websocket upgrade: %+v\n", err)
 		return
 	}
+
 	fmt.Println("entering loop")
 	for {
 		fmt.Println("Starting read")
@@ -105,12 +108,12 @@ func wsHandler(w http.ResponseWriter, r *http.Request) {
 			fmt.Println("error when reading:", err)
 			conn.Close(websocket.StatusInternalError, "oops, closing...")
 			fmt.Println("Connection closed")
-			break
+			return
 		}
 		fmt.Println("Got message:", string(msg))
 
 		m := "You sent: " + string(msg)
-		err = conn.Write(r.Context(), websocket.MessageText, []byte(m))
+		err = conn.Write(ctx, websocket.MessageText, []byte(m))
 		if err != nil {
 			fmt.Println("error when writing:", err)
 			break
