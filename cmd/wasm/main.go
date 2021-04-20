@@ -8,11 +8,12 @@ import (
 	"time"
 
 	//"os"
-	"nhooyr.io/websocket"
 	"syscall/js"
+
+	"nhooyr.io/websocket"
 )
 
-const TimeoutDuration = time.Second * 60
+const TimeoutDuration = time.Minute * 5
 
 var conn *websocket.Conn = nil
 
@@ -91,10 +92,13 @@ func readMsgWrapper() js.Func {
 		}
 		var msg string
 		var err error
+		c := make(chan bool)
 		go func() {
 			msg, err = readMsg()
+			fmt.Println(msg, "in go")
+			c <- err != nil
 		}()
-		if err != nil {
+		if <-c {
 			fmt.Println("error while reading message: ", err)
 			return fmt.Sprintf("error while reading message: %s", err)
 		}
