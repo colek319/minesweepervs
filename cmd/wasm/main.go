@@ -3,9 +3,10 @@ package main
 import (
 	"context"
 	"errors"
-	"fmt"
 	"net/url"
 	"time"
+
+	log "github.com/sirupsen/logrus"
 
 	//"os"
 	"syscall/js"
@@ -13,75 +14,114 @@ import (
 	"nhooyr.io/websocket"
 )
 
-const TimeoutDuration = time.Minute * 5
+const TimeoutDuration = time.Second * 10
 
-var conn *websocket.Conn = nil
+var (
+	conn       *websocket.Conn    = nil
+	connCtx    context.Context    = nil
+	connCancel context.CancelFunc = nil
+	connAlive  chan bool          = make(chan bool)
+)
 
-func makeConnection() error {
+func makeConnection(ctx context.Context) error {
 	u := url.URL{Scheme: "ws", Host: "localhost:9090", Path: "/ws-init"}
-
+	alive := make(chan bool)
+	connCtx = context.WithValue(context.Background(), "alive", alive)
+	connCtx, connCancel = context.WithCancel(connCtx)
 	// Create websocket connection
-	// var err error
-	ctx, cancel := context.WithTimeout(context.Background(), TimeoutDuration)
-	defer cancel()
-	// ctx := context.TODO()
-	fmt.Println("Dialing", u.String(), "...")
-	conn, _, _ = websocket.Dial(ctx, u.String(), nil)
-	fmt.Println("After dial")
-	// if err != nil {
-	// 	fmt.Println("dial:", err)
-	// 	return err
-	// }
-	fmt.Println("returning nil from makeConnection")
+	var err error
+	log.Infof("dialing: %s", u.String())
+	conn, _, err = websocket.Dial(connCtx, u.String(), nil)
+	if err != nil {
+		log.Errorf("failed to dial server at %s: %v", u.String(), err)
+		return err
+	}
+websocketLoop:
+	for {
+		select {
+		case <-time.After(TimeoutDuration):
+			connCtx = nil
+			connCancel()
+			log.Info("connection timed out")
+			break websocketLoop
+		case <-alive:
+			log.Debug("connection reset")
+		case <-connCtx.Done():
+			connCtx = nil
+			log.Info("connection cancalled")
+			break
+		}
+	}
 	return nil
 }
 
 func makeConnectionWrapper() js.Func {
 	f := js.FuncOf(func(this js.Value, args []js.Value) interface{} {
 		if len(args) != 0 {
-			return "Invalid number of arguments passed"
+			log.Fatal("failed to make connection: invalid number of arguments passed")
+			return ""
 		}
 		var err error
 		go func() {
-			err = makeConnection()
+			// if make connection
+			err = makeConnection(connCtx)
 		}()
 		if err != nil {
-			fmt.Println("Got error making connection:", err)
-			return "Error making connection"
+			log.Errorf("error making connection: %v", err)
+			return ""
 		}
-		return "Connection established"
+		return ""
 	})
 	return f
 }
 
-func sendMsg(msg string) error {
-	// err := conn.WriteMessage(websocket.TextMessage, []byte(msg))
-	err := conn.Write(context.TODO(), websocket.MessageText, []byte(msg))
+func sendMsg(ctx context.Context, msg string) error {
+	if ctx == nil {
+		return errors.New("nil connection")
+	}
+	writeCtx, cancel := context.WithTimeout(ctx, time.Millisecond*500)
+	defer cancel()
+
+	log.Debugf("sending message: %s", msg)
+	err := conn.Write(writeCtx, websocket.MessageText, []byte(msg))
+	ctx.Value("alive").(chan bool) <- true
 	return err
 }
 
 func sendMsgWrapper() js.Func {
 	f := js.FuncOf(func(this js.Value, args []js.Value) interface{} {
 		if len(args) != 1 {
-			return "Invalid number of arguments passed"
+			log.Fatal("failed to send message: invalid number of arguments passed")
+			return ""
 		}
-		err := sendMsg(args[0].String())
-		if err != nil {
-			fmt.Println("Got error sending message:", err)
-			return fmt.Sprintf("Got error while writing: %s", err)
+		var err error
+		c := make(chan bool)
+		go func() {
+			err = sendMsg(connCtx, args[0].String())
+			c <- err != nil
+		}()
+		if <-c {
+			log.Errorf("error while writing server: %v", err)
+			return ""
 		}
-		return "Message sent"
+		return ""
 	})
 	return f
 }
 
-func readMsg() (string, error) {
-	fmt.Println("Reading message")
-	_, msg, err := conn.Read(context.TODO())
-	fmt.Println(string(msg))
-	if err != nil {
-		return "", errors.New("error reading from server")
+func readMsg(ctx context.Context) (string, error) {
+	if ctx == nil {
+		return "", errors.New("nil connection")
 	}
+	readCtx, cancel := context.WithTimeout(connCtx, time.Millisecond*500)
+	defer cancel()
+
+	_, msg, err := conn.Read(readCtx)
+	if err != nil {
+		return "", err
+	}
+	log.Debugf("message received: %s", msg)
+	ctx.Value("alive").(chan bool) <- true
 	return string(msg), nil
 }
 
@@ -94,15 +134,14 @@ func readMsgWrapper() js.Func {
 		var err error
 		c := make(chan bool)
 		go func() {
-			msg, err = readMsg()
-			fmt.Println(msg, "in go")
+			msg, err = readMsg(connCtx)
 			c <- err != nil
 		}()
 		if <-c {
-			fmt.Println("error while reading message: ", err)
-			return fmt.Sprintf("error while reading message: %s", err)
+			log.Errorf("error while reading: %v", err)
+			return msg
 		}
-		return string(msg)
+		return msg
 	})
 	return f
 }
