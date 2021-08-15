@@ -7,21 +7,21 @@ import (
 
 type minefield struct {
 	width, height, mineCount int
-	mines                    map[location]interface{}
+	mines                    map[string]bool
 }
 
 func newMinefield(width, height, mineCount int) minefield {
-	mineLocs := make([]bool, width*height)
+	mineLocations := make([]bool, width*height)
 	for i := 0; i < int(mineCount); i++ {
-		mineLocs[i] = true
+		mineLocations[i] = true
 	}
 	rand.Seed(time.Now().UnixNano())
-	rand.Shuffle(len(mineLocs), func(i, j int) { mineLocs[i], mineLocs[j] = mineLocs[j], mineLocs[i] })
-	mines := map[location]interface{}{}
-	for i, b := range mineLocs {
+	rand.Shuffle(len(mineLocations), func(i, j int) { mineLocations[i], mineLocations[j] = mineLocations[j], mineLocations[i] })
+	mines := map[string]bool{}
+	for i, b := range mineLocations {
 		if b {
-			row, col := i/width, i%width
-			mines[Location(row, col)] = true
+			pos := Position{i / width, i % width}
+			mines[pos.stringify()] = true
 		}
 	}
 	return minefield{
@@ -32,35 +32,35 @@ func newMinefield(width, height, mineCount int) minefield {
 	}
 }
 
-func (m *minefield) addMine(loc location) {
-	m.mines[loc] = true
+func (m *minefield) addMine(pos Position) {
+	m.mines[pos.stringify()] = true
 	m.mineCount++
 }
 
-func (m *minefield) removeMine(loc location) {
-	m.mines[loc] = false
+func (m *minefield) removeMine(pos Position) {
+	m.mines[pos.stringify()] = false
 	m.mineCount--
 }
 
-func (m minefield) hasMine(loc location) bool {
-	return m.hasMine(loc)
+func (m minefield) hasMine(pos Position) bool {
+	return m.mines[pos.stringify()]
 }
 
-func (m minefield) minesAroundLocation(loc location) int {
-	row, col := loc.RowCol()
-	locationsToCheck := [8]location{
-		Location(row-1, col-1),
-		Location(row-1, col),
-		Location(row-1, col+1),
-		Location(row, col-1),
-		Location(row, col+1),
-		Location(row+1, col-1),
-		Location(row+1, col),
-		Location(row-1, col+1),
+func (m minefield) minesAroundLocation(pos Position) int {
+	row, col := pos.row, pos.col
+	positionsToCheck := [8]Position{
+		{row - 1, col - 1},
+		{row - 1, col},
+		{row - 1, col + 1},
+		{row, col - 1},
+		{row, col + 1},
+		{row + 1, col - 1},
+		{row + 1, col},
+		{row - 1, col + 1},
 	}
 	count := 0
-	for _, location := range locationsToCheck {
-		if _, ok := m.mines[location]; ok {
+	for _, pos := range positionsToCheck {
+		if hasMine, ok := m.mines[pos.stringify()]; ok && hasMine {
 			count += 1
 		}
 	}

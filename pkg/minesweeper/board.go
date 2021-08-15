@@ -10,7 +10,7 @@ func newBoard(width, height int) board {
 	for i := range cells {
 		cells[i] = make([]cell, width)
 		for j := range cells[i] {
-			cells[i][j] = newCell(Empty)
+			cells[i][j] = newCell()
 		}
 	}
 	return board{
@@ -20,43 +20,27 @@ func newBoard(width, height int) board {
 	}
 }
 
-func (b *board) setCell(loc location, l label) {
-	row, col := loc.RowCol()
-	b.cells[row][col] = cell{
-		label: l,
-	}
+func (b board) uncover(pos Position) {
+	cell := b.getCell(pos)
+	cell.covered = false
 }
 
-func (b board) getCell(loc location) cell {
-	row, col := loc.RowCol()
-	return b.cells[row][col]
+func (b board) flag(pos Position) {
+	cell := b.getCell(pos)
+	cell.flagged = true
+}
+
+func (b board) getCell(pos Position) cell {
+	return b.cells[pos.row][pos.col]
 }
 
 type cell struct {
-	label            label
 	covered, flagged bool
 }
 
-func newCell(label label) cell {
+func newCell() cell {
 	return cell{
-		label:   label,
 		covered: true,
 		flagged: false,
 	}
 }
-
-type label int
-
-const (
-	Empty label = iota
-	OneBomb
-	TwoBomb
-	ThreeBomb
-	FourBomb
-	FiveBomb
-	SixBomb
-	SevenBomb
-	EightBomb
-	BombLabel
-	FlagLabel
-)
