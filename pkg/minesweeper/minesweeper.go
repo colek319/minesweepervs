@@ -44,7 +44,7 @@ func (ms *Minesweeper) FirstMove(move Move) {
 func (ms Minesweeper) Move(move Move) error {
 	switch move.op {
 	case UncoverOp:
-		ms.uncover(move.loc)
+		ms.uncover(move)
 	case FlagOp:
 		ms.flag(move.loc)
 	default:
@@ -54,21 +54,68 @@ func (ms Minesweeper) Move(move Move) error {
 	return nil
 }
 
-func (ms *Minesweeper) uncover(loc location) {
-	if ms.mineField.hasMine(loc) {
+func (ms *Minesweeper) uncover(move Move) (err error) {
+	if ms.mineField.hasMine(move.loc) {
 		ms.gameOver = true
 		return
 	}
-	numBombs := ms.mineField.minesAroundLocation(loc)
-	ms.board.SetLabel(numBombs)
+	var lab label
+	numBombs := ms.mineField.minesAroundLocation(move.loc)
+	switch numBombs {
+	case 0:
+		lab = Empty
+		ms.floodUncover(move.loc)
+	case 1:
+		lab = OneBomb
+	case 2:
+		lab = TwoBomb
+	case 3:
+		lab = ThreeBomb
+	case 4:
+		lab = FourBomb
+	case 5:
+		lab = FiveBomb
+	case 6:
+		lab = SixBomb
+	case 7:
+		lab = SevenBomb
+	case 8:
+		lab = EightBomb
+	default:
+		ms.gameBoard.setCell(move.loc, Empty)
+		return errors.New("error in uncover: unknown bomb value")
+	}
+	ms.gameBoard.setCell()
+	return
 }
 
-func (ms *Minesweeper) floodFill(loc location) {
+func (ms *Minesweeper) floodUncover(loc location) {
+	seenLocations := map[location]bool{}
+	queue := make(chan location, ms.width*ms.height) // size of board
+	queue <- loc
+	var currLoc location
+	for len(queue) != 0 {
+		currLoc = <-queue
+		row, col := currLoc.RowCol()
+		if row < 0 || col < 0 || row >= ms.height || col >= ms.width {
+			continue
+		} else if _, ok := seenLocations[currLoc]; !ok {
+			cell := ms.gameBoard.getCell(currLoc)
+			if cell.covered {
+				cell.covered = false
+			}
 
+			seenLocations[currLoc] = true
+			queue <- currLoc.Up()
+			queue <- currLoc.Down()
+			queue <- currLoc.Left()
+			queue <- currLoc.Right()
+		}
+	}
 }
 
 func (ms *Minesweeper) flag(loc location) {
-
+	ms.gameBoard.getCell()
 }
 
 func (ms Minesweeper) CalculateScore() int {
@@ -108,6 +155,26 @@ type location string
 
 func Location(row, col int) location {
 	return location(fmt.Sprintf("(%d,%d)", row, col))
+}
+
+func (l location) Up() location {
+	row, col := l.RowCol()
+	return Location(row+1, col)
+}
+
+func (l location) Down() location {
+	row, col := l.RowCol()
+	return Location(row-1, col)
+}
+
+func (l location) Left() location {
+	row, col := l.RowCol()
+	return Location(row, col-1)
+}
+
+func (l location) Right() location {
+	row, col := l.RowCol()
+	return Location(row, col+1)
 }
 
 func (l location) String() string {
